@@ -1,65 +1,134 @@
-import Head from 'next/head'
-import styles from '../styles/Home.module.css'
+import { useState } from "react";
 
-export default function Home() {
+
+export default function HomePage(props) {
+
+  
+  const {pokemonArr} = props
+  const [currentPage, setCurrentPage] = useState(0)
+  const [search, setSearch] = useState('')
+
+
+  const filteredPokemons  = () =>{
+
+    if( search.length === 0 ){
+      return pokemonArr.slice(currentPage,currentPage + 5);
+    }
+
+    const filtered = pokemonArr.filter(  poke =>  poke.name.includes(search));
+    return filtered.slice(currentPage, currentPage + 5)
+  }
+
+  const nextPage = (  ) =>{ 
+    if(pokemonArr.filter(  poke =>  poke.name.includes(search)).length > currentPage +5)
+    setCurrentPage(currentPage + 5)
+  }
+
+  const previusPage = (  ) =>{ 
+    if(currentPage > 0)
+    setCurrentPage(currentPage - 5)
+  }
+
+  const  onSearchChange = ( {target} ) =>{ 
+    setCurrentPage(0);
+    setSearch(target.value)
+  }
+
   return (
-    <div className={styles.container}>
-      <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+    <div className="mt-5 container">
+      <h1>Listado de Pokemons</h1>
+      <hr/>
+      <input 
+        type="text"
+        className="mb-2 form-control"
+        placeholder="Buscar Pokemon"
+        value={search}
+        onChange={ onSearchChange}
+      />
 
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
+      <button 
+        className="btn btn-primary"
+        onClick={previusPage}
+      >
+        Anteriores
+      </button>
 
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
+      &nbsp;
 
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
+      <button 
+        className="btn btn-primary"
+        onClick={nextPage}
+      >
+        Siguientes 
+      </button>
 
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
+      <table className="table">
+          <thead>
+            <tr>
+              <th style={{width:100}}>Nombre</th>
+              <th style={{width:150}}>ID</th>
+              <th>Imagen</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              filteredPokemons().map( ({ id ,name,pic }) => (
+                <tr key ={id}>
+                  <td>{id}</td>
+                  <td>{name}</td>
+                  <td>
+                    <img 
+                      src={pic}
+                      alt={name}
+                      style={{height: 75}}
+                    />
+                  </td>
+                </tr>  
+              ))
+            }
 
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
+            <tr>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
 
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
-      </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
+          </tbody>
+      </table>
     </div>
   )
+}
+
+export const getStaticProps = async (context) => {
+
+  const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1500')
+
+  const data = await response.json();
+  const pokemons = data.results
+
+  const pokemonArr  =  pokemons.map( poke =>{
+
+    const pokeArr =  poke.url.split('/')
+    const id = pokeArr[6]
+    const pic = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${ id }.png`
+
+    return {
+      id,
+      name: poke.name,
+      pic
+    }
+    
+  })
+
+  if(!pokemonArr){
+    return {
+      notFound: true
+    }
+  }
+
+  return {
+    props:{
+      pokemonArr
+    }
+  }
 }
